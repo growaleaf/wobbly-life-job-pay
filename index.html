@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wobbly Life: Which Job Pays the Most Per Minute?</title>
+<meta name="description" content="Wobbly Life job pay compared per minute, with a calculator for how many runs you need for your next purchase. Sourced and dated.">
+<style>
+  :root {
+    --ink: #1b1d23;
+    --paper: #f7f4ee;
+    --line: #d8d2c4;
+    --accent: #2f6b4f;
+    --accent-dark: #1f4a36;
+    --muted: #6b6558;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  main { max-width: 880px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 1.7rem; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 0.95rem; margin-top: 0; }
+  section { margin-top: 36px; }
+  h2 { font-size: 1.2rem; border-bottom: 2px solid var(--line); padding-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--accent-dark); color: #fff; font-weight: normal; }
+  tr:nth-child(even) td { background: #efe9dc; }
+  .na { color: var(--muted); font-style: italic; }
+  .job-note { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+  .calc {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 18px 20px;
+    margin-top: 16px;
+  }
+  label { display: block; margin-top: 12px; font-size: 0.92rem; }
+  select, input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    margin-top: 4px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: inherit;
+  }
+  #calcResult {
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: #eef3ee;
+    border-left: 4px solid var(--accent);
+    font-size: 0.95rem;
+    min-height: 1.2em;
+  }
+  .sources { margin-top: 18px; }
+  details { margin-top: 8px; border: 1px solid var(--line); border-radius: 4px; padding: 6px 10px; background: #fff; }
+  summary { cursor: pointer; font-size: 0.88rem; color: var(--accent-dark); }
+  .src-item { font-size: 0.85rem; margin: 8px 0; padding-left: 10px; border-left: 2px solid var(--line); }
+  .src-diff { color: #7a4b1f; }
+  footer { margin-top: 48px; font-size: 0.82rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+  a { color: var(--accent-dark); }
+  .caveat {
+    background: #fff6e0;
+    border: 1px solid #e3c877;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 0.88rem;
+    margin-top: 16px;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Wobbly Life: Which Job Pays the Most Per Minute?</h1>
+  <p class="sub">Every figure below is what a job <em>can</em> pay, not a guarantee — sourced and dated, with ranges left as ranges.</p>
+
+  <section>
+    <h2>Job pay table</h2>
+    <table id="jobTable">
+      <thead>
+        <tr>
+          <th>Job</th>
+          <th>Where</th>
+          <th>Time limit</th>
+          <th>Pay</th>
+          <th>$ / minute</th>
+        </tr>
+      </thead>
+      <tbody id="jobTableBody"></tbody>
+    </table>
+    <div class="caveat">
+      <strong>Space-update jobs</strong> (Asteroid Mining, Asteroid Defence, Space Rescue, Space
+      Courier, Space Diner, Space Disco, Luggage Handler, Space Mechanic) pay <strong>Space
+      Credits</strong> — a separate currency from Wobbly Dollars. No source found gives per-job
+      Space Credit payouts, so they're named here but not given pay figures: we don't guess.
+    </div>
+  </section>
+
+  <section>
+    <h2>Calculator: how many runs to afford your next purchase?</h2>
+    <div class="calc">
+      <label for="jobSelect">Job
+        <select id="jobSelect"></select>
+      </label>
+      <label for="targetPrice">Target price ($)
+        <input type="number" id="targetPrice" min="1" step="1" value="500">
+      </label>
+      <div id="calcResult"></div>
+    </div>
+  </section>
+
+  <section class="sources">
+    <h2>Sources</h2>
+    <details open>
+      <summary>Per-job citations (expand)</summary>
+      <div id="sourceList"></div>
+    </details>
+  </section>
+
+  <footer>
+    Built from Bloxodes (<a href="https://bloxodes.com/articles/wobbly-life-how-to-make-money" target="_blank" rel="noopener">"How to Make Money Fast in Wobbly Life"</a>,
+    updated 2026-11-06) with GamePretty (2021) checked as a second source per row. Figures show what
+    each activity can pay, not what every run will pay — nothing here is guaranteed, compliant,
+    certified, or approved. Not affiliated with Wobbly Life or its developer.
+  </footer>
+</main>
+<script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  function fmtMoney(n) {
+    return "$" + Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  }
+
+  function perMinuteCell(job) {
+    var range = perMinuteRange(job);
+    if (!range) {
+      var noteHtml = job.perMinuteNote ? '<div class="job-note">' + job.perMinuteNote + '</div>' : '';
+      return '<span class="na">n/a</span>' + noteHtml;
+    }
+    var prefix = (job.payLow == null && job.payHigh != null) ? "up to " : "";
+    if (range.low === range.high) return prefix + fmtMoney(range.low);
+    return prefix + fmtMoney(range.low) + "–" + fmtMoney(range.high);
+  }
+
+  function renderTable() {
+    var tbody = document.getElementById("jobTableBody");
+    var rows = JOBS.map(function (job) {
+      return "<tr>" +
+        "<td>" + job.name + "</td>" +
+        "<td>" + job.location + "</td>" +
+        "<td>" + job.timeLabel + "</td>" +
+        "<td>" + job.payLabel + "</td>" +
+        "<td>" + perMinuteCell(job) + "</td>" +
+        "</tr>";
+    });
+    tbody.innerHTML = rows.join("");
+  }
+
+  function renderSources() {
+    var container = document.getElementById("sourceList");
+    var html = JOBS.map(function (job) {
+      var items = job.sources.map(function (s) {
+        var diff = s.diff ? '<div class="src-diff">Differs from the primary source: ' + s.diff + "</div>" : "";
+        return '<div class="src-item"><strong>' + s.name + "</strong> (" + s.date + ") &mdash; " +
+          '<a href="' + s.url + '" target="_blank" rel="noopener">source</a><br>' +
+          s.note + diff + "</div>";
+      }).join("");
+      return "<p><strong>" + job.name + "</strong></p>" + items;
+    }).join("");
+    container.innerHTML = html;
+  }
+
+  function populateJobSelect() {
+    var select = document.getElementById("jobSelect");
+    select.innerHTML = JOBS.map(function (job) {
+      return '<option value="' + job.id + '">' + job.name + "</option>";
+    }).join("");
+  }
+
+  function renderCalc() {
+    var jobId = document.getElementById("jobSelect").value;
+    var target = document.getElementById("targetPrice").value;
+    var job = jobById(jobId);
+    var result = runsNeeded(job, target);
+    var out = document.getElementById("calcResult");
+    if (result.error) {
+      out.innerHTML = result.error;
+      return;
+    }
+    if (result.mode === "exact") {
+      out.innerHTML = "<strong>" + result.runs + "</strong> " + result.unit + (result.runs === 1 ? "" : "s") +
+        " at $" + result.dollarsPerUnit + " each &rarr; " + fmtMoney(result.totalAtRuns) +
+        ".<div class=\"job-note\">" + result.explain + "</div>";
+      return;
+    }
+    if (result.runsOptimistic === result.runsConservative) {
+      out.innerHTML = "About <strong>" + result.runsOptimistic + "</strong> runs at " + fmtMoney(result.payHigh) + " each.";
+    } else {
+      out.innerHTML = "Between <strong>" + result.runsOptimistic + "</strong> runs (at " + fmtMoney(result.payHigh) +
+        " each, best case) and <strong>" + result.runsConservative + "</strong> runs (at " + fmtMoney(result.payLow) +
+        " each, worst case).";
+    }
+  }
+
+  renderTable();
+  renderSources();
+  populateJobSelect();
+  document.getElementById("jobSelect").addEventListener("change", renderCalc);
+  document.getElementById("targetPrice").addEventListener("input", renderCalc);
+  renderCalc();
+})();
+</script>
+</body>
+</html>
